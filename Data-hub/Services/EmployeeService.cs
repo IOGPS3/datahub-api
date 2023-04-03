@@ -1,26 +1,40 @@
 ﻿using Data_hub.Models;
-using Firebase.Database;
-using Firebase.Database.Query;
+using System.Text;
+using System.Text.Json;
 
 namespace Data_hub.Services
 {
-    public class EmployeeService
+    public static class EmployeeService
     {
         private const string FirebaseDatabaseUrl = " https://gps3-669ff-default-rtdb.europe-west1.firebasedatabase.app/";
 
 
-        private readonly FirebaseClient firebaseClient;
+       
+        static readonly HttpClient client = new HttpClient();
 
-        public EmployeeService()
+        public static async Task<Employee> AddEmployee(Employee employee)
         {
-            firebaseClient = new FirebaseClient(FirebaseDatabaseUrl);
-        }
+            string employeeJsonString = JsonSerializer.Serialize(employee);
 
-        public async Task AddEmployee(Employee user)
-        {
-            await firebaseClient
-              .Child("users")
-              .PostAsync(user);
+
+            var payload = new StringContent(employeeJsonString, Encoding.UTF8, "application/json");
+            string url = $"{FirebaseDatabaseUrl}" +
+                        $"users/" +
+                        $"user5.json";
+
+
+            var httpResponseMessage = await client.PutAsync(url, payload);
+
+            if (httpResponseMessage.IsSuccessStatusCode)
+            {
+                var contentStream = await httpResponseMessage.Content.ReadAsStringAsync();
+
+                var result = JsonSerializer.Deserialize<Employee>(contentStream);
+                return result;
+            }
+
+            return null;
         }
     }
+
 }
