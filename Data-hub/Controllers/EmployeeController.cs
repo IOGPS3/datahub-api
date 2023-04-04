@@ -27,9 +27,10 @@ namespace Data_hub.Controllers
         /// <response code="200">The employee was sucessfully created</response>
         /// <response code="400">An error was made with the given parameters. More context will be given in the body</response>
         [HttpPost]
-        public async Task PostEmployee(Employee employee)
+        public IActionResult PostEmployee(Employee employee)
         {
-            await employeeService.AddEmployee(employee);
+            employeeService.AddEmployee(employee);
+            return Ok();
         }
     }
 }
