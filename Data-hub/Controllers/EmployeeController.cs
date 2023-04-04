@@ -9,11 +9,11 @@ namespace Data_hub.Controllers
     [ApiController]
     public class EmployeeController : ControllerBase
     {
-        //private readonly EmployeeService employeeService;
+        private readonly EmployeeService employeeService;
 
-        public EmployeeController(/*EmployeeService employeeService*/)
+        public EmployeeController(EmployeeService employeeService)
         {
-            //this.employeeService = employeeService;
+            this.employeeService = employeeService;
         }
 
         // POST: api/PostEmployee
@@ -27,10 +27,9 @@ namespace Data_hub.Controllers
         /// <response code="200">The employee was sucessfully created</response>
         /// <response code="400">An error was made with the given parameters. More context will be given in the body</response>
         [HttpPost]
-        public async Task PostEmployee(/*Employee employee*/)
+        public async Task PostEmployee(Employee employee)
         {
-            return;
-            //await employeeService.AddEmployee(employee);
+            await employeeService.AddEmployee(employee);
         }
     }
 }
