@@ -9,15 +9,12 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<EmployeeService, EmployeeService>();
 
 var app = builder.Build();
 
-app.MapPost("/employee", async (Employee employeeRequest) =>
-{
-    var result = await EmployeeService.AddEmployee(employeeRequest);
-    if (result == null) return Results.Problem("An error as occured while trying to add employee");
-    return Results.Ok(result);
-});
+
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

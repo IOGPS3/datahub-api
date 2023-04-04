@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace Data_hub.Services
 {
-    public static class EmployeeService
+    public  class EmployeeService
     {
         private const string FirebaseDatabaseUrl = " https://gps3-669ff-default-rtdb.europe-west1.firebasedatabase.app/";
 
@@ -12,7 +12,7 @@ namespace Data_hub.Services
        
         static readonly HttpClient client = new HttpClient();
 
-        public static async Task<Employee> AddEmployee(Employee employee)
+        public  async Task<Employee> AddEmployee(Employee employee)
         {
             string employeeJsonString = JsonSerializer.Serialize(employee);
 
