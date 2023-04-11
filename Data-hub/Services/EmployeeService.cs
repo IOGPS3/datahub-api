@@ -16,7 +16,6 @@ namespace Data_hub.Services
         {
             string employeeJsonString = JsonSerializer.Serialize(employee);
 
-
             var payload = new StringContent(employeeJsonString, Encoding.UTF8, "application/json");
             string url = $"{FirebaseDatabaseUrl}" +
                         $"users/" +

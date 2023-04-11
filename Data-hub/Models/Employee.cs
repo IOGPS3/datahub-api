@@ -1,8 +1,17 @@
 ﻿namespace Data_hub.Models
 {
+    using System.ComponentModel.DataAnnotations;
     public class Employee
     {
-        public string? name { get; set; }
-        public string? locationType { get; set; }
+        [Required(ErrorMessage = "Email address is required")]
+        [EmailAddress]
+        public string email { get; set; }
+        public List<string>? favorites { get; set; }
+        [Required(ErrorMessage = "Current location is required")]
+        public Location location { get; set; }
+        public string meetingStatus { get; set; }
+        [Required(ErrorMessage = "Name is required")]
+        public string name { get; set; }
+     
     }
 }
