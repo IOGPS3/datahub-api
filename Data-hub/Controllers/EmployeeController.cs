@@ -20,5 +20,19 @@ namespace Data_hub.Controllers
         {
             await employeeService.AddEmployee(employee);
         }
+
+        [HttpGet("{name}")]
+        public async Task<Employee> GetEmployee(string name)
+        {
+            Employee emp = await employeeService.GetEmployee(name);
+            return emp;
+        }
+
+        [HttpGet("All")]
+        public async Task<Dictionary<string, Employee>> GetEmployees()
+        {
+            Dictionary<string, Employee> emp = await employeeService.GetEmployees();
+            return emp;
+        }
     }
 }

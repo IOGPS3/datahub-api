@@ -1,6 +1,7 @@
 ﻿using Data_hub.Models;
 using System.Text;
 using System.Text.Json;
+using System.Xml.Linq;
 
 namespace Data_hub.Services
 {
@@ -29,6 +30,45 @@ namespace Data_hub.Services
                 var contentStream = await httpResponseMessage.Content.ReadAsStringAsync();
 
                 var result = JsonSerializer.Deserialize<Employee>(contentStream);
+                return result;
+            }
+
+            return null;
+        }
+
+        public async Task<Employee> GetEmployee(string name)
+        {
+            string url = $"{FirebaseDatabaseUrl}" +
+                        $"users/" +
+                        $""+name+".json";
+
+
+            var httpResponseMessage = await client.GetAsync(url);
+
+            if (httpResponseMessage.IsSuccessStatusCode)
+            {
+                var contentStream = await httpResponseMessage.Content.ReadAsStringAsync();
+
+                var result = JsonSerializer.Deserialize<Employee>(contentStream);
+                return result;
+            }
+
+            return null;
+        }
+
+        public async Task<Dictionary<string, Employee>> GetEmployees()
+        {
+            string url = $"{FirebaseDatabaseUrl}" +
+                        $"users.json";
+
+
+            var httpResponseMessage = await client.GetAsync(url);
+
+            if (httpResponseMessage.IsSuccessStatusCode)
+            {
+                var contentStream = await httpResponseMessage.Content.ReadAsStringAsync();
+
+                var result = JsonSerializer.Deserialize<Dictionary<string, Employee>>(contentStream);
                 return result;
             }
 
