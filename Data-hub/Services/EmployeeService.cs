@@ -74,6 +74,28 @@ namespace Data_hub.Services
 
             return null;
         }
+
+        public async Task<Employee> updateMeetingData(string user, string status)
+        {
+            string jsonString = JsonSerializer.Serialize(status);
+            StringContent payload = new StringContent(jsonString, Encoding.UTF8, "application/json-patch+json");
+            string url = $"{FirebaseDatabaseUrl}" +
+            $"users/" +
+            $"" + user + ".json";
+
+
+            var httpResponseMessage = await client.PatchAsync(url, payload);
+
+            if (httpResponseMessage.IsSuccessStatusCode)
+            {
+                var contentStream = await httpResponseMessage.Content.ReadAsStringAsync();
+
+                var result = JsonSerializer.Deserialize<Employee>(contentStream);
+                return result;
+            }
+
+            return null;
+        }
     }
 
 }

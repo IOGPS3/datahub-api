@@ -34,5 +34,12 @@ namespace Data_hub.Controllers
             Dictionary<string, Employee> emp = await employeeService.GetEmployees();
             return emp;
         }
+
+        [HttpPatch("{name}/meetingStatus={status}")]
+        public async Task<Employee> postMeetingDataForSpecificUser([FromRoute]string name, [FromRoute] string status)
+        {
+            var updatedData = await employeeService.updateMeetingData(name, status);
+            return updatedData;
+        }
     }
 }
