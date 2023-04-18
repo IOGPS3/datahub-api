@@ -19,11 +19,33 @@ namespace Data_hub.Services
 
             var payload = new StringContent(employeeJsonString, Encoding.UTF8, "application/json");
             string url = $"{FirebaseDatabaseUrl}" +
+                        $"users.json";
+
+
+            var httpResponseMessage = await client.PostAsync(url, payload);
+
+            if (httpResponseMessage.IsSuccessStatusCode)
+            {
+                var contentStream = await httpResponseMessage.Content.ReadAsStringAsync();
+
+                var result = JsonSerializer.Deserialize<Employee>(contentStream);
+                return result;
+            }
+
+            return null;
+        }
+
+        public async Task<Employee> UpdateEmployee(string uniqueKey, Employee employee)
+        {
+            string employeeJsonString = JsonSerializer.Serialize(employee);
+
+            var payload = new StringContent(employeeJsonString, Encoding.UTF8, "application/json");
+            string url = $"{FirebaseDatabaseUrl}" +
                         $"users/" +
-                        $"user5.json";
+                        $"" + uniqueKey + ".json";
 
 
-            var httpResponseMessage = await client.PutAsync(url, payload);
+            var httpResponseMessage = await client.PatchAsync(url, payload);
 
             if (httpResponseMessage.IsSuccessStatusCode)
             {
@@ -40,7 +62,7 @@ namespace Data_hub.Services
         {
             string url = $"{FirebaseDatabaseUrl}" +
                         $"users/" +
-                        $""+name+".json";
+                        $"" + name + ".json";
 
 
             var httpResponseMessage = await client.GetAsync(url);
@@ -51,6 +73,22 @@ namespace Data_hub.Services
 
                 var result = JsonSerializer.Deserialize<Employee>(contentStream);
                 return result;
+            }
+
+            return null;
+        }
+
+        public async Task<Employee> GetEmployeeOnEmail(string email)
+        {
+            Dictionary<string, Employee> employees = await GetEmployees();
+
+            //search within the list on employee with according email
+            foreach (Employee employee in employees.Values)
+            {
+                if (employee.email.Equals(email))
+                {
+                    return employee;
+                }
             }
 
             return null;

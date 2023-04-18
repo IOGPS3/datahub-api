@@ -1,6 +1,7 @@
 ﻿namespace Data_hub.Models
 {
     using System.ComponentModel.DataAnnotations;
+
     public class Employee
     {
         [Required(ErrorMessage = "Email address is required")]

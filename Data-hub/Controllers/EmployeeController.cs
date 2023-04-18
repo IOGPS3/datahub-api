@@ -21,10 +21,24 @@ namespace Data_hub.Controllers
             await employeeService.AddEmployee(employee);
         }
 
+        [HttpPatch]
+        public async Task UpdateEmployee(string name, Employee employee)
+        {
+            await employeeService.AddEmployee(employee);
+        }
+
         [HttpGet("{name}")]
-        public async Task<Employee> GetEmployee(string name)
+        [HttpGet("update/{name}")]
+        public async Task<Employee> GetEmployee([FromRoute]string name, Employee employee)
         {
             Employee emp = await employeeService.GetEmployee(name);
+            return emp;
+        }
+
+        [HttpGet("search/{email}")]
+        public async Task<Employee> GetEmployeeOnEmail(string email)
+        {
+            Employee emp = await employeeService.GetEmployeeOnEmail(email);
             return emp;
         }
 
