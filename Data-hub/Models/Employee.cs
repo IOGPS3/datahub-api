@@ -6,13 +6,13 @@
     {
         [Required(ErrorMessage = "Email address is required")]
         [EmailAddress]
-        public string email { get; set; }
-        public List<string>? favorites { get; set; }
+        public string Email { get; set; }
+        public List<string>? Favorites { get; set; }
         [Required(ErrorMessage = "Current location is required")]
-        public string location { get; set; }
-        public string meetingStatus { get; set; }
+        public string Location { get; set; }
+        public string MeetingStatus { get; set; }
         [Required(ErrorMessage = "Name is required")]
-        public string name { get; set; }
+        public string Name { get; set; }
      
     }
 }

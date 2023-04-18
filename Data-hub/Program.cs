@@ -1,5 +1,8 @@
 using Data_hub.Models;
 using Data_hub.Services;
+using FluentValidation.AspNetCore;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +13,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<EmployeeService, EmployeeService>();
+
+
+builder.Services.AddControllers().AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<EmployeeValidator>());
+
 
 var app = builder.Build();
 

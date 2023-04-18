@@ -85,7 +85,7 @@ namespace Data_hub.Services
             //search within the list on employee with according email
             foreach (Employee employee in employees.Values)
             {
-                if (employee.email.Equals(email))
+                if (employee.Email.Equals(email))
                 {
                     return employee;
                 }
