@@ -57,38 +57,60 @@ namespace Data_hub.Controllers
         }
 
         [HttpPatch]
-        public async Task UpdateEmployee(string name, Employee employee)
+        public async Task<IActionResult> UpdateEntireEmployee(string unique, Employee employee)
         {
-            await employeeService.AddEmployee(employee);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            FirebaseResponse response = await _firebaseClient.UpdateAsync($"users/{unique}", employee);
+            Employee updatedUser = response.ResultAs<Employee>();
+
+            return CreatedAtAction(nameof(UpdateEntireEmployee), updatedUser);
         }
 
-        [HttpGet("{name}")]
-        [HttpGet("update/{name}")]
-        public async Task<Employee> GetEmployee([FromRoute]string name, Employee employee)
+        //[HttpPatch]
+        [HttpPatch("{unique}/meetingStatus={status}")]
+        public async Task<IActionResult> UpdateEmployeeMeeting(string unique, string status)
         {
-            Employee emp = await employeeService.GetEmployee(name);
-            return emp;
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            FirebaseResponse response = await _firebaseClient.UpdateAsync($"users/{unique}", status);
+            Employee updatedUser = response.ResultAs<Employee>();
+
+            return CreatedAtAction(nameof(UpdateEmployeeMeeting), updatedUser);
         }
 
-        [HttpGet("search/{email}")]
-        public async Task<Employee> GetEmployeeOnEmail(string email)
+        [HttpGet("{unique}")]
+        public async Task<IActionResult> GetEmployee([FromRoute] string unique)
         {
-            Employee emp = await employeeService.GetEmployeeOnEmail(email);
-            return emp;
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            FirebaseResponse response = await _firebaseClient.GetAsync($"users/{unique}");
+            Employee receivedUser = response.ResultAs<Employee>();
+
+            return CreatedAtAction(nameof(GetEmployee), receivedUser);
         }
 
-        [HttpGet("All")]
-        public async Task<Dictionary<string, Employee>> GetEmployees()
-        {
-            Dictionary<string, Employee> emp = await employeeService.GetEmployees();
-            return emp;
-        }
+        //[HttpGet("search/{email}")]
+        //public async Task<Employee> GetEmployeeOnEmail(string email)
+        //{
+        //    Employee emp = await employeeService.GetEmployeeOnEmail(email);
+        //    return emp;
+        //}
 
-        [HttpPatch("{name}/meetingStatus={status}")]
-        public async Task<Employee> postMeetingDataForSpecificUser([FromRoute]string name, [FromRoute] string status)
-        {
-            var updatedData = await employeeService.updateMeetingData(name, status);
-            return updatedData;
-        }
+        //[HttpGet("All")]
+        //public async Task<Dictionary<string, Employee>> GetEmployees()
+        //{
+        //    Dictionary<string, Employee> emp = await employeeService.GetEmployees();
+        //    return emp;
+        //}
     }
 }
