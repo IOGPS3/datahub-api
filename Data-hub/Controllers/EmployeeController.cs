@@ -27,8 +27,6 @@ namespace Data_hub.Controllers
             _firebaseClient = new FireSharp.FirebaseClient(config);
         }
 
-
-
         // POST: api/PostEmployee
         /// <summary>
         /// Creates a new employee in the Firebase Realtime database.
@@ -56,7 +54,7 @@ namespace Data_hub.Controllers
             await employeeService.AddEmployee(employee);
         }
 
-        [HttpPatch]
+        [HttpPatch("/Update")]
         public async Task<IActionResult> UpdateEntireEmployee(string unique, Employee employee)
         {
             if (!ModelState.IsValid)
@@ -65,13 +63,19 @@ namespace Data_hub.Controllers
             }
 
             FirebaseResponse response = await _firebaseClient.UpdateAsync($"users/{unique}", employee);
-            Employee updatedUser = response.ResultAs<Employee>();
 
-            return CreatedAtAction(nameof(UpdateEntireEmployee), updatedUser);
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                return Ok(response.ResultAs<Employee>());
+            }
+            else
+            {
+                return BadRequest();
+            }
         }
 
         //[HttpPatch]
-        [HttpPatch("{unique}/meetingStatus={status}")]
+        [HttpPatch("{unique}/changeStatus/{status}")]
         public async Task<IActionResult> UpdateEmployeeMeeting(string unique, string status)
         {
             if (!ModelState.IsValid)
@@ -79,10 +83,41 @@ namespace Data_hub.Controllers
                 return BadRequest(ModelState);
             }
 
-            FirebaseResponse response = await _firebaseClient.UpdateAsync($"users/{unique}", status);
-            Employee updatedUser = response.ResultAs<Employee>();
+            FirebaseResponse getUser = await _firebaseClient.GetAsync($"users/{unique}");
 
-            return CreatedAtAction(nameof(UpdateEmployeeMeeting), updatedUser);
+            if (getUser.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                Employee receivedUser = getUser.ResultAs<Employee>();
+                receivedUser.MeetingStatus = status;
+
+                FirebaseResponse response = await _firebaseClient.UpdateAsync($"users/{unique}", receivedUser);
+
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    return Ok(response.ResultAs<Employee>());
+
+                    //receive the user again
+                    //FirebaseResponse receive = await _firebaseClient.GetAsync($"users/{unique}");
+                    //if (receive.StatusCode == System.Net.HttpStatusCode.OK)
+                    //{
+                    //    return Ok("YEETUS");
+                    //}
+                    //else
+                    //{
+                    //    return BadRequest();
+                    //}
+
+                    
+                }
+                else
+                {
+                    return BadRequest();
+                }
+            }
+            else
+            {
+                return BadRequest();
+            }
         }
 
         [HttpGet("{unique}")]
@@ -94,23 +129,38 @@ namespace Data_hub.Controllers
             }
 
             FirebaseResponse response = await _firebaseClient.GetAsync($"users/{unique}");
-            Employee receivedUser = response.ResultAs<Employee>();
 
-            return CreatedAtAction(nameof(GetEmployee), receivedUser);
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                Employee receivedUser = response.ResultAs<Employee>();
+                return Ok(receivedUser);
+            }
+            else
+            {
+                return BadRequest();
+            }
+
         }
 
-        //[HttpGet("search/{email}")]
-        //public async Task<Employee> GetEmployeeOnEmail(string email)
-        //{
-        //    Employee emp = await employeeService.GetEmployeeOnEmail(email);
-        //    return emp;
-        //}
+        [HttpGet("search/All")]
+        public async Task<IActionResult> GetEmployees()
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
-        //[HttpGet("All")]
-        //public async Task<Dictionary<string, Employee>> GetEmployees()
-        //{
-        //    Dictionary<string, Employee> emp = await employeeService.GetEmployees();
-        //    return emp;
-        //}
+            FirebaseResponse response = await _firebaseClient.GetAsync($"users/");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                Dictionary<string, Employee> receivedUser = response.ResultAs<Dictionary<string, Employee>>();
+                return Ok(receivedUser);
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
     }
 }
