@@ -162,5 +162,37 @@ namespace Data_hub.Controllers
                 return BadRequest();
             }
         }
+
+        [HttpGet("searchOnLetter/{letter}")]
+        public async Task<IActionResult> GetEmployees(string letter)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            FirebaseResponse response = await _firebaseClient.GetAsync($"users/");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                Dictionary<string, Employee> receivedUsers = response.ResultAs<Dictionary<string, Employee>>();
+                Dictionary<string, Employee> sorted = new Dictionary<string, Employee>();
+
+                foreach (KeyValuePair<string, Employee> kvp in receivedUsers)
+                {
+                    string lowered = kvp.Value.Name.ToLower();
+                    if (lowered[0] == letter.ToLower()[0])
+                    {
+                        sorted.Add(kvp.Key, kvp.Value);
+                    }
+                }
+
+                return Ok(sorted);
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
     }
 }
