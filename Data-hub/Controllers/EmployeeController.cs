@@ -82,32 +82,29 @@ namespace Data_hub.Controllers
             {
                 return BadRequest(ModelState);
             }
-
+            
+            //get user
             FirebaseResponse getUser = await _firebaseClient.GetAsync($"users/{unique}");
 
             if (getUser.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 Employee receivedUser = getUser.ResultAs<Employee>();
+
+                //1. check user(return error for user not found/invalid)
+                if (receivedUser == null)
+                {
+                    return NotFound();
+                }
+
+                //change the status of the user
                 receivedUser.MeetingStatus = status;
 
                 FirebaseResponse response = await _firebaseClient.UpdateAsync($"users/{unique}", receivedUser);
 
+                //2. return seccess message if successfull
                 if (response.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    return Ok(response.ResultAs<Employee>());
-
-                    //receive the user again
-                    //FirebaseResponse receive = await _firebaseClient.GetAsync($"users/{unique}");
-                    //if (receive.StatusCode == System.Net.HttpStatusCode.OK)
-                    //{
-                    //    return Ok("YEETUS");
-                    //}
-                    //else
-                    //{
-                    //    return BadRequest();
-                    //}
-
-                    
+                    return Ok(response.ResultAs<Employee>());                    
                 }
                 else
                 {
@@ -134,6 +131,48 @@ namespace Data_hub.Controllers
             {
                 Employee receivedUser = response.ResultAs<Employee>();
                 return Ok(receivedUser);
+            }
+            else
+            {
+                return BadRequest();
+            }
+
+        }
+
+        [HttpGet("/searchOnEmail/{email}")]
+        public async Task<IActionResult> GetEmployeeOnEmail([FromRoute] string email)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            FirebaseResponse response = await _firebaseClient.GetAsync($"users/");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                Employee found = null;
+                Dictionary<string, Employee> receivedUsers = response.ResultAs<Dictionary<string, Employee>>();
+
+                //check all the employees for the email
+                foreach (KeyValuePair<string, Employee> pair in receivedUsers)
+                {
+                    if (pair.Value.Email.Equals(email))
+                    {
+                        found = pair.Value;
+                        break;
+                    }
+                }
+
+                //return the user/notfound
+                if (found != null)
+                {
+                    return Ok(found);
+                }
+                else
+                {
+                    return NotFound("Employee was not found on that email");
+                }
             }
             else
             {
@@ -194,5 +233,49 @@ namespace Data_hub.Controllers
                 return BadRequest();
             }
         }
+
+        [HttpGet("getFavouritesFromEmployee/{unique}")]
+        public async Task<IActionResult> GetFavoritesFromEmployee([FromRoute] string unique)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            FirebaseResponse response = await _firebaseClient.GetAsync($"users/{unique}");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                Employee receivedUser = response.ResultAs<Employee>();
+
+                if (receivedUser != null)
+                {
+                    List<Employee> foundFavourites = new List<Employee>();
+
+                    //get all the users
+                    foreach (string favourite in receivedUser.Favorites)
+                    {
+                        FirebaseResponse searchResponse = await _firebaseClient.GetAsync($"users/{favourite}");
+                        if (searchResponse.StatusCode == System.Net.HttpStatusCode.OK)
+                        {
+                            foundFavourites.Add(searchResponse.ResultAs<Employee>());
+                        }
+                    }
+
+                    //return the list
+                    return Ok(foundFavourites);
+                }
+                else
+                {
+                    return NotFound("User was not found");
+                }
+            }
+            else
+            {
+                return BadRequest();
+            }
+
+        }
+
     }
 }
