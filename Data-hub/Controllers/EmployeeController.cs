@@ -4,6 +4,7 @@ using FireSharp.Interfaces;
 using FireSharp.Response;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics.Metrics;
 
 namespace Data_hub.Controllers
 {
@@ -54,7 +55,7 @@ namespace Data_hub.Controllers
             await employeeService.AddEmployee(employee);
         }
 
-        [HttpPatch("/Update")]
+        [HttpPatch("/UpdateUser")]
         public async Task<IActionResult> UpdateEntireEmployee(string unique, Employee employee)
         {
             if (!ModelState.IsValid)
@@ -75,7 +76,7 @@ namespace Data_hub.Controllers
         }
 
         //[HttpPatch]
-        [HttpPatch("{unique}/changeStatus/{status}")]
+        [HttpPatch("/changeStatus")]
         public async Task<IActionResult> UpdateEmployeeMeeting(string unique, string status)
         {
             if (!ModelState.IsValid)
@@ -117,7 +118,7 @@ namespace Data_hub.Controllers
             }
         }
 
-        [HttpGet("{unique}")]
+        [HttpGet("/getEmployee")]
         public async Task<IActionResult> GetEmployee([FromRoute] string unique)
         {
             if (!ModelState.IsValid)
@@ -181,7 +182,7 @@ namespace Data_hub.Controllers
 
         }
 
-        [HttpGet("search/All")]
+        [HttpGet("/search/All")]
         public async Task<IActionResult> GetEmployees()
         {
             if (!ModelState.IsValid)
@@ -202,7 +203,7 @@ namespace Data_hub.Controllers
             }
         }
 
-        [HttpGet("searchOnLetter/{letter}")]
+        [HttpGet("/searchOnLetter/{letter}")]
         public async Task<IActionResult> GetEmployees(string letter)
         {
             if (!ModelState.IsValid)
@@ -234,7 +235,7 @@ namespace Data_hub.Controllers
             }
         }
 
-        [HttpGet("getFavouritesFromEmployee/{unique}")]
+        [HttpGet("/getFavouritesFromEmployee")]
         public async Task<IActionResult> GetFavoritesFromEmployee([FromRoute] string unique)
         {
             if (!ModelState.IsValid)
@@ -277,5 +278,42 @@ namespace Data_hub.Controllers
 
         }
 
+        [HttpGet("/getUniqueFromEmail")]
+        public async Task<IActionResult> GetUniqueKeyFromEmail(string email)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            FirebaseResponse response = await _firebaseClient.GetAsync($"users/");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                Dictionary<string, Employee> receivedUsers = response.ResultAs<Dictionary<string, Employee>>();
+                string key = null;
+
+                foreach (KeyValuePair<string, Employee> kvp in receivedUsers)
+                {
+                    if (kvp.Value.Email.Equals(email))
+                    {
+                        key = kvp.Key;
+                    }
+                }
+
+                if (key != null)
+                {
+                    return Ok(key);
+                }
+                else
+                {
+                    return NotFound("Email does not exist");
+                }
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
     }
 }
