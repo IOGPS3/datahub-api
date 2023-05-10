@@ -1,5 +1,6 @@
 ﻿namespace Data_hub.Models
 {
+    using FirebaseAdmin.Auth;
     using System.ComponentModel.DataAnnotations;
 
     public class Employee
@@ -13,6 +14,6 @@
         public string MeetingStatus { get; set; }
         [Required(ErrorMessage = "Name is required")]
         public string Name { get; set; }
-     
-    }
+    
+}
 }

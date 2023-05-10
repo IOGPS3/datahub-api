@@ -2,8 +2,9 @@
 using Data_hub.Services;
 using FireSharp.Interfaces;
 using FireSharp.Response;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Data_hub.Controllers
 {
@@ -28,19 +29,8 @@ namespace Data_hub.Controllers
         }
 
 
-
-        // POST: api/PostEmployee
-        /// <summary>
-        /// Creates a new employee in the Firebase Realtime database.
-        /// </summary>
-        /// <remarks>
-        /// This should only be used when an employee does not exist in the database.
-        /// </remarks>
-        /// <param>Specifies the parameters</param>
-        /// <response code="200">The employee was successfully created</response>
-        /// <response code="400">An error was made with the given parameters. More context will be given in the body</response>
         [HttpPost]
-        public async Task <IActionResult>PostEmployee(Employee employee)
+        public async Task<IActionResult> PostEmployee(Employee employee)
         {
             if (!ModelState.IsValid)
             {
@@ -53,7 +43,7 @@ namespace Data_hub.Controllers
             return CreatedAtAction(nameof(PostEmployee), newUser);
 
 
-            await employeeService.AddEmployee(employee);
+            //   await employeeService.AddEmployee(employee);
         }
 
         [HttpPatch]
@@ -70,8 +60,8 @@ namespace Data_hub.Controllers
             return CreatedAtAction(nameof(UpdateEntireEmployee), updatedUser);
         }
 
-        //[HttpPatch]
-        [HttpPatch("{unique}/meetingStatus={status}")]
+
+        [HttpPatch("{unique}/MeetingStatus")]
         public async Task<IActionResult> UpdateEmployeeMeeting(string unique, string status)
         {
             if (!ModelState.IsValid)
@@ -79,7 +69,10 @@ namespace Data_hub.Controllers
                 return BadRequest(ModelState);
             }
 
-            FirebaseResponse response = await _firebaseClient.UpdateAsync($"users/{unique}", status);
+            Dictionary<string, object> updatedStatus = new Dictionary<string, object>();
+            updatedStatus.Add("MeetingStatus", status);
+
+            FirebaseResponse response = await _firebaseClient.UpdateAsync($"users/{unique}", updatedStatus);
             Employee updatedUser = response.ResultAs<Employee>();
 
             return CreatedAtAction(nameof(UpdateEmployeeMeeting), updatedUser);
@@ -99,18 +92,68 @@ namespace Data_hub.Controllers
             return CreatedAtAction(nameof(GetEmployee), receivedUser);
         }
 
-        //[HttpGet("search/{email}")]
-        //public async Task<Employee> GetEmployeeOnEmail(string email)
-        //{
-        //    Employee emp = await employeeService.GetEmployeeOnEmail(email);
-        //    return emp;
-        //}
+        [HttpPatch("{unique}/Favorites")]
+        public async Task<IActionResult> AddCoworkerToFavorite(string coworkerEmail, string unique)
+        {
+            if (!ModelState.IsValid || coworkerEmail == null)
+            {
+                return BadRequest(ModelState);
+            }
+            FirebaseResponse employeesResponse = await _firebaseClient.GetAsync($"users");
+            dynamic? data = JsonConvert.DeserializeObject<dynamic>(employeesResponse.Body);
+            List<Employee?> employees = ((IDictionary<string, JToken>)data).Select(k =>
+                                       JsonConvert.DeserializeObject<Employee>(k.Value.ToString())).ToList();
 
-        //[HttpGet("All")]
-        //public async Task<Dictionary<string, Employee>> GetEmployees()
-        //{
-        //    Dictionary<string, Employee> emp = await employeeService.GetEmployees();
-        //    return emp;
-        //}
+            Employee? e = employees.FirstOrDefault(x => x?.Email == coworkerEmail);
+
+            FavoriteCoworker? favoriteUser = null;
+            if (e != null)
+            {
+                favoriteUser = new FavoriteCoworker();
+                favoriteUser.UserName = e.Name;
+                favoriteUser.Email = e.Email;
+            }
+
+            if (favoriteUser != null)
+            {
+                Dictionary<int, object> updatedFavorite = new Dictionary<int, object>();
+                updatedFavorite.Add(1, favoriteUser);
+
+                FirebaseResponse response = await _firebaseClient.UpdateAsync($"users/{unique}/Favorites", updatedFavorite);
+                Employee updatedUser = response.ResultAs<Employee>();
+
+                return CreatedAtAction(nameof(AddCoworkerToFavorite), updatedUser);
+            }
+            else
+            {
+                return NotFound();
+            }
+
+        }
+
+        [HttpDelete("{unique}/Favorites")]
+        public async Task<IActionResult> RemoveCoworkerFromFavorite(string coworkerEmail, string unique)
+        {
+            if (!ModelState.IsValid || coworkerEmail == null)
+            {
+                return BadRequest(ModelState);
+            }
+
+            //Dictionary<int, object> removedFavorite = new Dictionary<int, object>();
+            //removedFavorite.Add(1, favoriteUser);
+            FirebaseResponse favResponse = await _firebaseClient.GetAsync($"users/{unique}/Favorites");
+
+            dynamic? data = JsonConvert.DeserializeObject<dynamic>(favResponse.Body);
+            List<FavoriteCoworker?> favorites = ((IDictionary<string, JToken>)data).Select(k =>
+                                       JsonConvert.DeserializeObject<FavoriteCoworker>(k.Value.ToString())).ToList();
+
+            FavoriteCoworker? favoriteUser = favorites.FirstOrDefault(x => x?.Email == coworkerEmail);
+
+            FirebaseResponse deleteResponse = await _firebaseClient.DeleteAsync($"users/{unique}/Favorites");
+            FavoriteCoworker deletedUser = deleteResponse.ResultAs<FavoriteCoworker>();
+
+            return CreatedAtAction(nameof(RemoveCoworkerFromFavorite), deletedUser);
+        }
     }
+
 }

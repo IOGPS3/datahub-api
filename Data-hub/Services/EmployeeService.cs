@@ -1,7 +1,9 @@
 ﻿using Data_hub.Models;
+using FirebaseAdmin;
+using FirebaseAdmin.Auth;
+using Google.Apis.Auth.OAuth2;
 using System.Text;
 using System.Text.Json;
-using System.Xml.Linq;
 
 namespace Data_hub.Services
 {
@@ -78,7 +80,7 @@ namespace Data_hub.Services
             return null;
         }
 
-        public async Task<Employee> GetEmployeeOnEmail(string email)
+        public async Task<Employee> GetEmployeeByEmail(string email)
         {
             Dictionary<string, Employee> employees = await GetEmployees();
 
@@ -131,6 +133,20 @@ namespace Data_hub.Services
                 var result = JsonSerializer.Deserialize<Employee>(contentStream);
                 return result;
             }
+
+            return null;
+        }
+
+
+        /// for favorite co- worker
+        public  async Task <Employee> AddFavoriteCoWorker()
+        {
+            FirebaseApp.Create(new AppOptions()
+            {
+                Credential = GoogleCredential.FromFile("path/to/serviceAccountKey.json")
+            });
+
+            var auth = FirebaseAuth.DefaultInstance;
 
             return null;
         }

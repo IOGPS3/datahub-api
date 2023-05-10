@@ -17,7 +17,6 @@ builder.Services.AddScoped<EmployeeService, EmployeeService>();
 
 builder.Services.AddControllers().AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<EmployeeValidator>());
 
-
 var app = builder.Build();
 
 

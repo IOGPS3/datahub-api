@@ -10,7 +10,7 @@ public class EmployeeValidator : AbstractValidator<Employee>
         RuleFor(employee => employee.Name).NotEmpty();
         RuleFor(employee => employee.Email).NotEmpty().EmailAddress();
         RuleFor(employee => employee.Location).NotEmpty();
-        RuleFor(employee => employee.MeetingStatus).NotEmpty().Must(status => status == "available" || status == "inMeeting");
+        RuleFor(employee => employee.MeetingStatus).NotEmpty().Must(status => status.ToLowerInvariant() == "available" || status == "inMeeting");
     }
 }
 
