@@ -71,7 +71,7 @@ namespace Data_hub.Controllers
             }
             else
             {
-                return BadRequest();
+                return BadRequest("Something went wrong with trying to update");
             }
         }
 
@@ -94,7 +94,7 @@ namespace Data_hub.Controllers
                 //1. check user(return error for user not found/invalid)
                 if (receivedUser == null)
                 {
-                    return NotFound();
+                    return NotFound("User does not exist with that unique code");
                 }
 
                 //change the status of the user
@@ -109,12 +109,12 @@ namespace Data_hub.Controllers
                 }
                 else
                 {
-                    return BadRequest();
+                    return BadRequest("Something went wrong trying to update the status");
                 }
             }
             else
             {
-                return BadRequest();
+                return BadRequest("Something went wrong trying to validate the user");
             }
         }
 
@@ -135,7 +135,7 @@ namespace Data_hub.Controllers
             }
             else
             {
-                return BadRequest();
+                return BadRequest("Something went wrong with retrieving the user");
             }
 
         }
@@ -177,7 +177,7 @@ namespace Data_hub.Controllers
             }
             else
             {
-                return BadRequest();
+                return BadRequest("Trying to get all the users failed");
             }
 
         }
@@ -199,7 +199,7 @@ namespace Data_hub.Controllers
             }
             else
             {
-                return BadRequest();
+                return BadRequest("Something went wrong with retrieving all the users");
             }
         }
 
@@ -231,7 +231,7 @@ namespace Data_hub.Controllers
             }
             else
             {
-                return BadRequest();
+                return BadRequest("Something went wrong with trying to retrieve all users");
             }
         }
 
@@ -273,7 +273,7 @@ namespace Data_hub.Controllers
             }
             else
             {
-                return BadRequest();
+                return BadRequest("Something went wrong with retrieving user data");
             }
 
         }
@@ -312,7 +312,7 @@ namespace Data_hub.Controllers
             }
             else
             {
-                return BadRequest();
+                return BadRequest("Something went wrong with trying check the user data");
             }
         }
     }
