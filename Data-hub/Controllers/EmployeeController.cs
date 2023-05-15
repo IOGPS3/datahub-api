@@ -254,7 +254,7 @@ namespace Data_hub.Controllers
                     List<Employee> foundFavourites = new List<Employee>();
 
                     //get all the users
-                    foreach (string favourite in receivedUser.Favorites)
+                    foreach (FavoriteCoworker favourite in receivedUser.Favorites)
                     {
                         FirebaseResponse searchResponse = await _firebaseClient.GetAsync($"users/{favourite}");
                         if (searchResponse.StatusCode == System.Net.HttpStatusCode.OK)

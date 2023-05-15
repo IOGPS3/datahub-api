@@ -7,7 +7,7 @@
         [Required(ErrorMessage = "Email address is required")]
         [EmailAddress]
         public string Email { get; set; }
-        public List<string>? Favorites { get; set; }
+        public List<FavoriteCoworker>? Favorites { get; set; }
         [Required(ErrorMessage = "Current location is required")]
         public string Location { get; set; }
         public string MeetingStatus { get; set; }
