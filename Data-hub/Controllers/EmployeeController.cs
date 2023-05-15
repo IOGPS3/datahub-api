@@ -119,7 +119,7 @@ namespace Data_hub.Controllers
         }
 
         [HttpGet("/getEmployee")]
-        public async Task<IActionResult> GetEmployee([FromRoute] string unique)
+        public async Task<IActionResult> GetEmployee(string unique)
         {
             if (!ModelState.IsValid)
             {
@@ -141,7 +141,7 @@ namespace Data_hub.Controllers
         }
 
         [HttpGet("/searchOnEmail/{email}")]
-        public async Task<IActionResult> GetEmployeeOnEmail([FromRoute] string email)
+        public async Task<IActionResult> GetEmployeeOnEmail(string email)
         {
             if (!ModelState.IsValid)
             {
@@ -236,7 +236,7 @@ namespace Data_hub.Controllers
         }
 
         [HttpGet("/getFavouritesFromEmployee")]
-        public async Task<IActionResult> GetFavoritesFromEmployee([FromRoute] string unique)
+        public async Task<IActionResult> GetFavoritesFromEmployee(string unique)
         {
             if (!ModelState.IsValid)
             {
