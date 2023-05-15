@@ -141,7 +141,7 @@ namespace Data_hub.Controllers
         }
 
         [HttpGet("/searchOnEmail/{email}")]
-        public async Task<IActionResult> GetEmployeeOnEmail(string email)
+        public async Task<IActionResult> GetEmployeeOnEmail([FromRoute] string email)
         {
             if (!ModelState.IsValid)
             {
