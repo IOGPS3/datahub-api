@@ -256,7 +256,8 @@ namespace Data_hub.Controllers
                     //get all the users
                     foreach (FavoriteCoworker favourite in receivedUser.Favorites)
                     {
-                        FirebaseResponse searchResponse = await _firebaseClient.GetAsync($"users/{favourite}");
+                        string key = await getKeyFromEmail(favourite.Email);
+                        FirebaseResponse searchResponse = await _firebaseClient.GetAsync($"users/{key}");
                         if (searchResponse.StatusCode == System.Net.HttpStatusCode.OK)
                         {
                             foundFavourites.Add(searchResponse.ResultAs<Employee>());
@@ -313,6 +314,38 @@ namespace Data_hub.Controllers
             else
             {
                 return BadRequest("Something went wrong with trying check the user data");
+            }
+        }
+
+        private async Task<string> getKeyFromEmail(string email)
+        {
+            FirebaseResponse response = await _firebaseClient.GetAsync($"users/");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                Dictionary<string, Employee> receivedUsers = response.ResultAs<Dictionary<string, Employee>>();
+                string key = null;
+
+                foreach (KeyValuePair<string, Employee> kvp in receivedUsers)
+                {
+                    if (kvp.Value.Email.Equals(email))
+                    {
+                        key = kvp.Key;
+                    }
+                }
+
+                if (key != null)
+                {
+                    return key;
+                }
+                else
+                {
+                    return "KeyWasNotFound";
+                }
+            }
+            else
+            {
+                return "Error with connection/information";
             }
         }
     }
