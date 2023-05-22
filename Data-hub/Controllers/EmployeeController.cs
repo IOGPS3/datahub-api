@@ -180,14 +180,14 @@ namespace Data_hub.Controllers
 
             if (coworker == null || currentUser == null)
             {
-                exceptionMessage = "Either the unique ID or coworker's email doesn't exist!";
+                exceptionMessage = "Either the unique ID or co-worker's email doesn't exist!";
                 return false;
             }
             if (action == ADD)
             {
                 if (currentUser.Favorites?.Find(x => x.Email == coworkerEmail) != null)
                 {
-                    exceptionMessage = "Coworker already exists in your favorites!";
+                    exceptionMessage = "Co-worker already exists in your favorites!";
                     return false;
                 }
                 if (currentUser.Email == coworkerEmail)
