@@ -5,6 +5,7 @@ using FireSharp.Response;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.ComponentModel;
 
 namespace Data_hub.Controllers
 {
@@ -14,6 +15,11 @@ namespace Data_hub.Controllers
     {
         private readonly EmployeeService employeeService;
         private readonly IFirebaseClient _firebaseClient;
+        public const string ADD = "Add"; 
+        public const string DELETE = "Delete";
+        Employee currentUser = null;
+        Employee coworker = null;
+        string exceptionMessage = null;
 
         public EmployeeController(EmployeeService employeeService)
         {
@@ -43,7 +49,7 @@ namespace Data_hub.Controllers
             return CreatedAtAction(nameof(PostEmployee), newUser);
 
 
-            //   await employeeService.AddEmployee(employee);
+            
         }
 
         [HttpPatch]
@@ -92,32 +98,40 @@ namespace Data_hub.Controllers
             return CreatedAtAction(nameof(GetEmployee), receivedUser);
         }
 
-        [HttpPatch("{unique}/Favorites")]
+        [HttpPatch("{unique}/Favorites/Add")]
         public async Task<IActionResult> AddCoworkerToFavorite(string coworkerEmail, string unique)
         {
             if (!ModelState.IsValid || coworkerEmail == null)
             {
                 return BadRequest(ModelState);
             }
+
             FirebaseResponse employeesResponse = await _firebaseClient.GetAsync($"users");
-            dynamic? data = JsonConvert.DeserializeObject<dynamic>(employeesResponse.Body);
-            List<Employee?> employees = ((IDictionary<string, JToken>)data).Select(k =>
-                                       JsonConvert.DeserializeObject<Employee>(k.Value.ToString())).ToList();
-
-            Employee? e = employees.FirstOrDefault(x => x?.Email == coworkerEmail);
-
+           
+            if (employeesResponse.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                if (!IsCoworkerExist(employeesResponse, unique, coworkerEmail,ADD))
+                {
+                    return BadRequest(exceptionMessage);
+                }
+            }
             FavoriteCoworker? favoriteUser = null;
-            if (e != null)
+            if (coworker != null)
             {
                 favoriteUser = new FavoriteCoworker();
-                favoriteUser.UserName = e.Name;
-                favoriteUser.Email = e.Email;
+                favoriteUser.UserName = coworker.Name;
+                favoriteUser.Email = coworker.Email;
             }
-
+            int favCount = 0;
             if (favoriteUser != null)
             {
+                if(currentUser.Favorites?.Count > 0)
+                {
+                    favCount = currentUser.Favorites.Count;
+                }
+
                 Dictionary<int, object> updatedFavorite = new Dictionary<int, object>();
-                updatedFavorite.Add(1, favoriteUser);
+                updatedFavorite.Add(favCount, favoriteUser);
 
                 FirebaseResponse response = await _firebaseClient.UpdateAsync($"users/{unique}/Favorites", updatedFavorite);
                 Employee updatedUser = response.ResultAs<Employee>();
@@ -131,29 +145,68 @@ namespace Data_hub.Controllers
 
         }
 
-        [HttpDelete("{unique}/Favorites")]
+        [HttpPatch("{unique}/Favorites/remove")]
         public async Task<IActionResult> RemoveCoworkerFromFavorite(string coworkerEmail, string unique)
         {
             if (!ModelState.IsValid || coworkerEmail == null)
             {
                 return BadRequest(ModelState);
             }
+            FirebaseResponse response = await _firebaseClient.GetAsync($"users");
 
-            //Dictionary<int, object> removedFavorite = new Dictionary<int, object>();
-            //removedFavorite.Add(1, favoriteUser);
-            FirebaseResponse favResponse = await _firebaseClient.GetAsync($"users/{unique}/Favorites");
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                if (!IsCoworkerExist(response, unique, coworkerEmail, DELETE))
+                {
+                    return BadRequest(exceptionMessage);
+                }
+            }
+            List<FavoriteCoworker> temp = currentUser.Favorites;
+            int fav= currentUser.Favorites.FindIndex(x=>x.Email == coworkerEmail);
 
-            dynamic? data = JsonConvert.DeserializeObject<dynamic>(favResponse.Body);
-            List<FavoriteCoworker?> favorites = ((IDictionary<string, JToken>)data).Select(k =>
-                                       JsonConvert.DeserializeObject<FavoriteCoworker>(k.Value.ToString())).ToList();
-
-            FavoriteCoworker? favoriteUser = favorites.FirstOrDefault(x => x?.Email == coworkerEmail);
-
-            FirebaseResponse deleteResponse = await _firebaseClient.DeleteAsync($"users/{unique}/Favorites");
+            FirebaseResponse deleteResponse = await _firebaseClient.DeleteAsync($"users/{unique}/Favorites/{fav}");
             FavoriteCoworker deletedUser = deleteResponse.ResultAs<FavoriteCoworker>();
 
             return CreatedAtAction(nameof(RemoveCoworkerFromFavorite), deletedUser);
         }
+
+        private bool IsCoworkerExist(FirebaseResponse response, string unique, string coworkerEmail, string action) {
+
+            Dictionary<string, Employee> employees = response.ResultAs<Dictionary<string, Employee>>();
+
+            currentUser = employees.FirstOrDefault(x => x.Key ==unique).Value;
+
+            coworker = employees.FirstOrDefault(x => x.Value.Email == coworkerEmail).Value;
+
+            if (coworker == null || currentUser == null)
+            {
+                exceptionMessage = "Either the unique ID or coworker's email doesn't exist!";
+                return false;
+            }
+            if (action == ADD)
+            {
+                if (currentUser.Favorites?.Find(x => x.Email == coworkerEmail) != null)
+                {
+                    exceptionMessage = "Coworker already exists in your favorites!";
+                    return false;
+                }
+                if (currentUser.Email == coworkerEmail)
+                {
+                    exceptionMessage = "A logged in user cannot add him/her-self as favorites!";
+                    return false;
+                }
+            }
+            if (action == DELETE)
+            {
+                if (currentUser.Favorites?.Find(x => x.Email == coworkerEmail) == null)
+                {
+                    exceptionMessage = "The entered coworker is not the favorites list!";
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
 }
+
