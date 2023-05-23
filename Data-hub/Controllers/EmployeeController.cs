@@ -15,6 +15,7 @@ namespace Data_hub.Controllers
     public class EmployeeController : ControllerBase
     {
         private readonly EmployeeService employeeService;
+        private NotificationService _notificationService;
         private readonly IFirebaseClient _firebaseClient;
         public const string ADD = "Add"; 
         public const string DELETE = "Delete";
@@ -22,10 +23,13 @@ namespace Data_hub.Controllers
         Employee coworker = null;
         string exceptionMessage = null;
 
+        
 
-        public EmployeeController(EmployeeService employeeService)
+
+        public EmployeeController(EmployeeService employeeService, NotificationService notificationService)
         {
             this.employeeService = employeeService;
+            _notificationService = notificationService;
 
             IFirebaseConfig config = new FireSharp.Config.FirebaseConfig
             {
@@ -243,20 +247,8 @@ namespace Data_hub.Controllers
                     return BadRequest(ModelState);
                 }
 
-                // Retrieve the coworker's notifyWhenFree list from Firebase
-                List<string> notifyWhenFree = await GetNotifyWhenFreeList(coworkerEmail);
-
-                // Check if the user is already in the coworker's notifyWhenFree list
-                if (notifyWhenFree.Contains(unique))
-                {
-                    return BadRequest("You have already requested to be notified when this coworker is free.");
-                }
-
-                // Add the user to the coworker's notifyWhenFree list
-                notifyWhenFree.Add(unique);
-
-                // Update the coworker's notifyWhenFree list in Firebase
-                await UpdateNotifyWhenFreeList(coworkerEmail, notifyWhenFree);
+                // Call the appropriate service method
+                await _notificationService.AddUserToNotifyWhenFreeList(unique, coworkerEmail);
 
                 return Ok();
             }
@@ -265,25 +257,6 @@ namespace Data_hub.Controllers
                 Console.WriteLine(ex.Message);
                 return StatusCode(500, "An error occurred while processing your request.");
             }
-        }
-
-        private async Task<List<string>> GetNotifyWhenFreeList(string coworkerEmail)
-        {
-            FirebaseResponse response = await _firebaseClient.GetAsync($"users/{coworkerEmail}/notifyWhenFree");
-            List<string> notifyWhenFree = response.ResultAs<List<string>>();
-
-            // If the list is null, initialize it
-            if (notifyWhenFree == null)
-            {
-                notifyWhenFree = new List<string>();
-            }
-
-            return notifyWhenFree;
-        }
-
-        private async Task UpdateNotifyWhenFreeList(string coworkerEmail, List<string> notifyWhenFree)
-        {
-            await _firebaseClient.UpdateAsync($"users/{coworkerEmail}/notifyWhenFree", notifyWhenFree);
         }
 
 
