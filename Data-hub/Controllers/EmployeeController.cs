@@ -244,14 +244,7 @@ namespace Data_hub.Controllers
                 }
 
                 // Retrieve the coworker's notifyWhenFree list from Firebase
-                FirebaseResponse response = await _firebaseClient.GetAsync($"users/{coworkerEmail}/notifyWhenFree");
-                List<string> notifyWhenFree = response.ResultAs<List<string>>();
-
-                // If the list is null, initialize it
-                if (notifyWhenFree == null)
-                {
-                    notifyWhenFree = new List<string>();
-                }
+                List<string> notifyWhenFree = await GetNotifyWhenFreeList(coworkerEmail);
 
                 // Check if the user is already in the coworker's notifyWhenFree list
                 if (notifyWhenFree.Contains(unique))
@@ -263,7 +256,7 @@ namespace Data_hub.Controllers
                 notifyWhenFree.Add(unique);
 
                 // Update the coworker's notifyWhenFree list in Firebase
-                await _firebaseClient.UpdateAsync($"users/{coworkerEmail}/notifyWhenFree", notifyWhenFree);
+                await UpdateNotifyWhenFreeList(coworkerEmail, notifyWhenFree);
 
                 return Ok();
             }
@@ -274,12 +267,31 @@ namespace Data_hub.Controllers
             }
         }
 
+        private async Task<List<string>> GetNotifyWhenFreeList(string coworkerEmail)
+        {
+            FirebaseResponse response = await _firebaseClient.GetAsync($"users/{coworkerEmail}/notifyWhenFree");
+            List<string> notifyWhenFree = response.ResultAs<List<string>>();
+
+            // If the list is null, initialize it
+            if (notifyWhenFree == null)
+            {
+                notifyWhenFree = new List<string>();
+            }
+
+            return notifyWhenFree;
+        }
+
+        private async Task UpdateNotifyWhenFreeList(string coworkerEmail, List<string> notifyWhenFree)
+        {
+            await _firebaseClient.UpdateAsync($"users/{coworkerEmail}/notifyWhenFree", notifyWhenFree);
+        }
+
+
 
         private async Task EndMeeting(string unique)
         {
             try
             {
-                // Retrieve the user's notifyWhenFree list from Firebase
                 FirebaseResponse response = await _firebaseClient.GetAsync($"users/{unique}/notifyWhenFree");
                 List<string> notifyWhenFree = response.ResultAs<List<string>>();
 
@@ -292,10 +304,7 @@ namespace Data_hub.Controllers
                     expoPushTokens.Add(expoPushToken);
                 }
 
-                // Create the notification message
                 string message = $"{unique} is now available.";
-
-                // Send the notifications
                 await SendNotifications(expoPushTokens, message);
 
                 // Clear the notifyWhenFree list
@@ -321,7 +330,6 @@ namespace Data_hub.Controllers
                     body = message
                 }).ToList();
 
-                // Convert the messages to JSON
                 string json = JsonConvert.SerializeObject(messages);
 
                 // Create the HTTP request
@@ -335,12 +343,17 @@ namespace Data_hub.Controllers
                 HttpClient client = new HttpClient();
                 HttpResponseMessage response = await client.SendAsync(request);
 
-                // Handle the response (you might want to do more with it than just print it out)
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Failed to send notifications. HTTP status code: {response.StatusCode}");
+                }
+
+                // Log the response. This information could be useful for debugging or monitoring, or it could be sent to the client if necessary for example, if coworkers are waiting for a user to become available.
                 Console.WriteLine(await response.Content.ReadAsStringAsync());
+
             }
             catch (Exception ex)
             {
-                // Log the exception
                 Console.WriteLine(ex.Message);
             }
         }
