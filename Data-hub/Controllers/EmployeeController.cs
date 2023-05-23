@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.ComponentModel;
+using System.Text;
 
 namespace Data_hub.Controllers
 {
@@ -20,6 +21,7 @@ namespace Data_hub.Controllers
         Employee currentUser = null;
         Employee coworker = null;
         string exceptionMessage = null;
+
 
         public EmployeeController(EmployeeService employeeService)
         {
@@ -52,6 +54,7 @@ namespace Data_hub.Controllers
             
         }
 
+
         [HttpPatch]
         public async Task<IActionResult> UpdateEntireEmployee(string unique, Employee employee)
         {
@@ -78,11 +81,18 @@ namespace Data_hub.Controllers
             Dictionary<string, object> updatedStatus = new Dictionary<string, object>();
             updatedStatus.Add("MeetingStatus", status);
 
+            if (status == "Available")
+            {
+                // When an error happens in EndMeeting this does not influence updating the meeting status.
+                await EndMeeting(unique);
+            }
+
             FirebaseResponse response = await _firebaseClient.UpdateAsync($"users/{unique}", updatedStatus);
             Employee updatedUser = response.ResultAs<Employee>();
 
             return CreatedAtAction(nameof(UpdateEmployeeMeeting), updatedUser);
         }
+
 
         [HttpGet("{unique}")]
         public async Task<IActionResult> GetEmployee([FromRoute] string unique)
@@ -97,6 +107,7 @@ namespace Data_hub.Controllers
 
             return CreatedAtAction(nameof(GetEmployee), receivedUser);
         }
+
 
         [HttpPatch("{unique}/Favorites/Add")]
         public async Task<IActionResult> AddCoworkerToFavorite(string coworkerEmail, string unique)
@@ -145,6 +156,7 @@ namespace Data_hub.Controllers
 
         }
 
+
         [HttpPatch("{unique}/Favorites/remove")]
         public async Task<IActionResult> RemoveCoworkerFromFavorite(string coworkerEmail, string unique)
         {
@@ -169,6 +181,7 @@ namespace Data_hub.Controllers
 
             return CreatedAtAction(nameof(RemoveCoworkerFromFavorite), deletedUser);
         }
+
 
         private bool IsCoworkerExist(FirebaseResponse response, string unique, string coworkerEmail, string action) {
 
@@ -206,7 +219,132 @@ namespace Data_hub.Controllers
             }
             return true;
         }
-    }
 
+
+
+
+        /// <summary>
+        /// Adds the user to a coworker's "notify when free" list.
+        /// </summary>
+        /// <remarks>
+        /// This method retrieves the coworker's "notify when free" list from Firebase and adds the user to the list if they are not already on it.
+        /// The updated list is then saved back to Firebase. If an error occurs during this process, a 500 status code is returned.
+        /// </remarks>
+        /// <param name="unique">The unique identifier of the user who wants to be notified.</param>
+        /// <param name="coworkerEmail">The email of the coworker who the user wants to be notified about. When this coworker changes their meeting status, it will trigger the sending of the notification.</param>
+        /// <returns>A status code indicating the result of the operation. Returns 200 (OK) if the operation was successful, 400 (Bad Request) if the user is already on the coworker's "notify when free" list, or 500 (Internal Server Error) if an error occurred.</returns>      
+        [HttpPatch("{unique}/notifyWhenFree/{coworkerEmail}")]
+        public async Task<IActionResult> NotifyWhenFree(string unique, string coworkerEmail)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                // Retrieve the coworker's notifyWhenFree list from Firebase
+                FirebaseResponse response = await _firebaseClient.GetAsync($"users/{coworkerEmail}/notifyWhenFree");
+                List<string> notifyWhenFree = response.ResultAs<List<string>>();
+
+                // If the list is null, initialize it
+                if (notifyWhenFree == null)
+                {
+                    notifyWhenFree = new List<string>();
+                }
+
+                // Check if the user is already in the coworker's notifyWhenFree list
+                if (notifyWhenFree.Contains(unique))
+                {
+                    return BadRequest("You have already requested to be notified when this coworker is free.");
+                }
+
+                // Add the user to the coworker's notifyWhenFree list
+                notifyWhenFree.Add(unique);
+
+                // Update the coworker's notifyWhenFree list in Firebase
+                await _firebaseClient.UpdateAsync($"users/{coworkerEmail}/notifyWhenFree", notifyWhenFree);
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
+        }
+
+
+        private async Task EndMeeting(string unique)
+        {
+            try
+            {
+                // Retrieve the user's notifyWhenFree list from Firebase
+                FirebaseResponse response = await _firebaseClient.GetAsync($"users/{unique}/notifyWhenFree");
+                List<string> notifyWhenFree = response.ResultAs<List<string>>();
+
+                // For each user in the notifyWhenFree list, retrieve their ExpoPushToken
+                List<string> expoPushTokens = new List<string>();
+                foreach (string user in notifyWhenFree)
+                {
+                    response = await _firebaseClient.GetAsync($"users/{user}/ExpoPushToken");
+                    string expoPushToken = response.ResultAs<string>();
+                    expoPushTokens.Add(expoPushToken);
+                }
+
+                // Create the notification message
+                string message = $"{unique} is now available.";
+
+                // Send the notifications
+                await SendNotifications(expoPushTokens, message);
+
+                // Clear the notifyWhenFree list
+                await _firebaseClient.UpdateAsync($"users/{unique}/notifyWhenFree", new List<string>());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+
+
+        private async Task SendNotifications(List<string> expoPushTokens, string message)
+        {
+            try
+            {
+                // Create the notification messages
+                var messages = expoPushTokens.Select(token => new
+                {
+                    to = token,
+                    sound = "default",
+                    body = message
+                }).ToList();
+
+                // Convert the messages to JSON
+                string json = JsonConvert.SerializeObject(messages);
+
+                // Create the HTTP request
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "https://exp.host/--/api/v2/push/send");
+                request.Headers.Add("Accept", "application/json");
+                request.Headers.Add("Accept-Encoding", "gzip, deflate");
+                request.Headers.Add("Content-Type", "application/json");
+                request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                // Send the HTTP request
+                HttpClient client = new HttpClient();
+                HttpResponseMessage response = await client.SendAsync(request);
+
+                // Handle the response (you might want to do more with it than just print it out)
+                Console.WriteLine(await response.Content.ReadAsStringAsync());
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+    }
 }
 
