@@ -14,10 +14,10 @@ public class Employee
     [Required(ErrorMessage = "Name is required")]
     public string Name { get; set; }
 
-    public List<string> NotifyWhenFreeList { get; set; }
+    //public List<string> NotifyWhenFreeList { get; set; }
 
-    public Employee()
-    {
-        NotifyWhenFreeList = new List<string>();
-    }
+    //public Employee()
+    //{
+    //    NotifyWhenFreeList = new List<string>();
+    //}
 }
