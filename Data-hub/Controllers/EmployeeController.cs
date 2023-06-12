@@ -40,6 +40,12 @@ namespace Data_hub.Controllers
             _firebaseClient = new FireSharp.FirebaseClient(config);
         }
 
+        [HttpGet("Test")]
+        public IActionResult Get()
+        {
+            return Ok("OK");
+        }
+
 
         [HttpPost]
         public async Task<IActionResult> PostEmployee(Employee employee)
